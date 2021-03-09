@@ -10,230 +10,130 @@ import (
 	"github.com/gorilla/websocket"
 	validator "github.com/matthewgao/gojsonvalidator"
 	uuid "github.com/satori/go.uuid"
-	"github.com/shirou/gopsutil/cpu"
-	"github.com/shirou/gopsutil/mem"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strconv"
 )
 
 type UserInput struct {
-	Code string `json:"code" is_required:"true"`
-	StdInput string `json:"std_input" is_required:"true"`
-	Language string `json:"language" is_required:"true"`
-	MaxCpuTime int `json:"max_cpu_time" is_required:"true"`
-	MaxMemory int `json:"max_memory" is_required:"true"`
+	Code       string `json:"code" is_required:"true"`
+	StdInput   string `json:"std_input" is_required:"true"`
+	Language   string `json:"language" is_required:"true"`
+	MaxCpuTime int    `json:"max_cpu_time" is_required:"true"`
+	MaxMemory  int    `json:"max_memory" is_required:"true"`
 }
+
 var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {
 		return true
 	},
 }
-func Ping(c *gin.Context)  {
-	if !checkToken(c.GetHeader("Token")) {
-		c.JSON(http.StatusOK,gin.H{
-			"code": -1,
-			"data": "wrong token",
-		})
-		return
-	}
-	hostname, err  := os.Hostname()
-	if err != nil {
-		hostname = ""
-	}
-	cpuPercent, _ := cpu.Percent(0, false)
-	vmem, _ := mem.VirtualMemory()
-	c.JSON(http.StatusOK, gin.H{
-		"server_version": "0.1.0",
-		"hostname":       hostname,
-		"cpu_core":       runtime.NumCPU(),
-		"cpu": cpuPercent,
-		"memory": vmem.UsedPercent,
-		"action": "pong",
-	})
-}
+
 func HandleCode(c *gin.Context) {
-
-	// Token验证模块，暂时不想要
-	//if !checkToken(c.GetHeader("Token")) {
-	//	c.JSON(http.StatusOK, gin.H{
-	//		"code": -1,
-	//		"data": "wrong token",
-	//	})
-	//	return
-	//}
-
-	var input UserInput
-	var err error
-
-	//改变协议，获得websocket连接
+	// upgrade http to websocket connection
 	ws, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
+		sendToClient(ws, gin.H{
+			"code": -1,
+			"data": err.Error()})
 		return
 	}
 	defer ws.Close()
+	handleConn(ws)
+}
 
-	for  {
+func handleConn(ws *websocket.Conn) {
 
-		//读消息
+	req := &UserInput{}
+	for {
+
+		// read msg from connection
 		_, msg, err := ws.ReadMessage()
 		if err != nil {
-			break
+			return
 		}
 
-		//判断消息格式，消息格式不正确返回结束
-		err = validator.ValidateJson(msg,&input)
+		// validate json
+		err = validator.ValidateJson(msg, &req)
 		if err != nil {
-			err = sendToClient(ws,gin.H{
+			sendToClient(ws, gin.H{
 				"code": -1,
-				"data": err.Error(),})
-			if err != nil {
-				break
-			}
-			break
+				"data": err.Error()})
+			return
 		}
 
-		//为提交创建目录,有异常断开连接
-		subbmissionId := uuid.NewV4()
-		var submissionDir string
-		if submissionDir , err = initSubmissionEnv(subbmissionId.String()); err != nil {
-			err = sendToClient(ws, gin.H{
-				"code": -1,
-				"data": err.Error(),
-			})
-			break
-		}
-		defer freeSubmissionEnv(submissionDir)
-
-		var conf config.LanguageCompileConfig
-		switch input.Language {
+		// validate language
+		conf := config.LanguageCompileConfig{}
+		switch req.Language {
 		case "c":
-				conf = config.CompileC
+			conf = config.CompileC
 		case "cpp":
-				conf = config.CompileCpp
+			conf = config.CompileCpp
 		case "java":
 			conf = config.CompileJava
 		case "py2":
 			conf = config.CompilePython2
 		default:
-			err = sendToClient(ws, gin.H{
-			"code": -1,
-			"data":"invaild language support",
+			sendToClient(ws, gin.H{
+				"code": -1,
+				"data": "invaild language support",
 			})
-			if err != nil {
-				break
-			}
+			return
 		}
 
-		//为提交代码和stdin创建文件
-		srcPath := filepath.Join(submissionDir, conf.SrcName)
-		var srcFile *os.File
-		if srcFile, err = os.Create(srcPath); err != nil {
-			err = sendToClient(ws,gin.H{
-				"code": -1,
-				"data": err.Error(),
-			})
-			if err != nil {
-				break
-			}
-			break
-		}
-		defer srcFile.Close()
-		stdInPath := filepath.Join(submissionDir, conf.RunConfig.StdinputPath)
-		var stdInFile *os.File
-		if stdInFile, err = os.Create(stdInPath); err != nil {
-			err = sendToClient(ws, gin.H{
-				"code": -1,
-				"data": err.Error(),
-			})
-			break
-		}
-	_, err =os.Create(filepath.Join(submissionDir,conf.RunConfig.StdoutputPath))
+		// create dir
+		space, err := allocateSpace(req, conf)
+		// TODO: defer freeSpace(space)
 		if err != nil {
-			err = sendToClient(ws, gin.H{
+			sendToClient(ws, gin.H{
 				"code": -1,
 				"data": err.Error(),
 			})
-			break
+			return
 		}
 
-		//defer stdInFile.Close()
-
-		_, err = srcFile.WriteString(input.Code)
-		if err != nil {
-			err = sendToClient(ws,gin.H{
-				"code": -1,
-				"data": err.Error(),
-			})
-			if err != nil {
-				break
-			}
-			break
-		}
-		_, err = stdInFile.WriteString(input.StdInput)
-		if err != nil {
-			err = sendToClient(ws,gin.H{
-				"code": -1,
-				"data": err.Error(),
-			})
-			if err != nil {
-				break
-			}
-			break
-		}
-
-		 err = sendToClient(ws, gin.H{
-			"code": 0,
+		// update status
+		sendToClient(ws, gin.H{
+			"code":   0,
 			"status": "pending",
 		})
 
-		 if err != nil {
-		 	break
-		 }
-
-		//编译代码中
-		var exePath string
-		exePath, err = compiler.Compile(conf.CompileConfig, srcPath, submissionDir)
-		//代码编译错误
+		// compile code
+		exePath, err := compiler.Compile(conf.CompileConfig, space)
 		if err != nil {
-			err = sendToClient(ws, gin.H{
-				"code": 0,
-				"status": "COMPILE_ERROR",
+			sendToClient(ws, gin.H{
+				"code":            0,
+				"status":          "COMPILE_ERROR",
 				"compilation_log": err.Error(),
 			})
-			if err != nil {
-				break
-			}
-			os.RemoveAll(submissionDir)
+			freeSpace(space)
 			continue
 		}
 
-		//编译代码完成更新状态
-		err = sendToClient(ws, gin.H{
-			"code": 0,
+		// update status
+		sendToClient(ws, gin.H{
+			"code":   0,
 			"status": "running",
 		})
-		if err != nil {
-			break
-		}
 
-		log.Println("用户可执行文件路径：--->" + exePath)
-		log.Println("用户目录：--->" + submissionDir)
+		log.Println("user exe file:", exePath)
+		log.Println("user space:", space)
+
 		conf.RunConfig.Command.FillWith(map[string]string{
 			"{exe_path}":   exePath,
-			"{exe_dir}":    submissionDir,
-			"{max_memory}": strconv.Itoa(input.MaxMemory / 1024),
+			"{exe_dir}":    space,
+			"{max_memory}": strconv.Itoa(10240),
 		})
 
+		fmt.Println("server layer: ", conf.RunConfig.Command)
 		rc := client.RunClient{
 			Runconf:       conf.RunConfig,
 			ExePath:       exePath,
-			MaxCpuTime:    input.MaxCpuTime,
-			MaxMemory:     input.MaxMemory,
-			SubmissionDir: submissionDir,
+			MaxCpuTime:    5000,
+			MaxMemory:     128 * 1024 * 1024,
+			SubmissionDir: space,
 		}
 		runResult := rc.RunCode()
 		var resultStatus string
@@ -249,27 +149,66 @@ func HandleCode(c *gin.Context) {
 		default:
 			resultStatus = "SYSTEM_ERROR"
 		}
-		fmt.Println("input cpu time: ", input.MaxCpuTime)
-		fmt.Println("status: ", resultStatus)
-		fmt.Println("cpu time: ", runResult.CpuTime)
-		fmt.Println("real time: ", runResult.RealTime)
 
-		//更新代码执行情况
+		// update status
 		err = sendToClient(ws, gin.H{
 			"code":   0,
 			"status": resultStatus,
 			"stdout": runResult.Output,
 			"time":   runResult.CpuTime,
 		})
-		os.RemoveAll(submissionDir)
+
+		freeSpace(space)
 		if err != nil {
 			break
 		}
 	}
 }
 
-func sendToClient(conn *websocket.Conn, v interface{}) error  {
-	msg, err := json.Marshal(v);
+func allocateSpace(input *UserInput, c config.LanguageCompileConfig) (string, error) {
+
+	// create directory
+	id := uuid.NewV4()
+	dir := filepath.Join(config.SUBMISSION_DIR, id.String())
+	err := os.Mkdir(dir, 0777)
+	if err != nil {
+		return "", fmt.Errorf("could not create dir %v", err)
+	}
+
+	// create srouce code file
+	srcPath := filepath.Join(dir, c.SrcName)
+	srcFile, err := os.Create(srcPath)
+	if err != nil {
+		return "", fmt.Errorf("could not create srouce code file %v", err)
+	}
+	_, err = srcFile.WriteString(input.Code)
+	if err != nil {
+		return "", fmt.Errorf("could not write srouce code content %v", err)
+	}
+
+	// create stdin file
+	stdInputPath := filepath.Join(dir, c.RunConfig.StdinputPath)
+	stdInputFile, err := os.Create(stdInputPath)
+	if err != nil {
+		return "", fmt.Errorf("could not create stdin file %v", err)
+	}
+	_, err = stdInputFile.WriteString(input.StdInput)
+	if err != nil {
+		return "", fmt.Errorf("could not write stdin content %v", err)
+	}
+
+	// create stdout file
+	stdOutputPath := filepath.Join(dir, c.RunConfig.StdoutputPath)
+	_, err = os.Create(stdOutputPath)
+	if err != nil {
+		return "", fmt.Errorf("could not create stdout file %v", err)
+	}
+
+	return dir, nil
+}
+
+func sendToClient(conn *websocket.Conn, v interface{}) error {
+	msg, err := json.Marshal(v)
 	if err != nil {
 		return err
 	}
@@ -280,23 +219,6 @@ func sendToClient(conn *websocket.Conn, v interface{}) error  {
 	return nil
 }
 
-func freeSubmissionEnv(submissionDirPath string) error {
-	return os.RemoveAll(submissionDirPath)
+func freeSpace(submissionDirPath string) {
+	os.RemoveAll(submissionDirPath)
 }
-
-func initSubmissionEnv(subbmissionId string) (string, error) {
-	subbmissionDirPath := filepath.Join(config.SUBMISSION_DIR, subbmissionId)
-	if err := os.Mkdir(subbmissionDirPath, 0777); err != nil {
-		return "", err
-
-	}
-	return subbmissionDirPath, nil
-}
-func checkToken(token string)  bool {
-	localToken := os.Getenv("RPC_TOKEN")
-	if token != localToken {
-		return false
-	}
-	return true
-}
-

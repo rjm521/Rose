@@ -7,28 +7,28 @@ import (
 
 type CommandStr string
 
-func (c *CommandStr) FillWith(param map[string]string) string  {
-	for k,v := range param {
+func (c *CommandStr) FillWith(param map[string]string) string {
+	for k, v := range param {
 		*c = CommandStr(strings.Replace(string(*c), k, v, -1))
 	}
 	return string(*c)
 }
 
 type CompileConfig struct {
-	SrcName string //source code file name
-	ExeName string // executable file name (after compile)
-	MaxCpuTime int
-	MaxRealTime int
-	MaxMemory int
+	SrcName        string //source code file name
+	ExeName        string // executable file name (after compile)
+	MaxCpuTime     int
+	MaxRealTime    int
+	MaxMemory      int
 	CompileCommand CommandStr
 }
 
 type RunConfig struct {
-	Command CommandStr
-	StdinputPath string
+	Command       CommandStr
+	StdinputPath  string
 	StdoutputPath string
-	SeccompRule string
-	Env []string
+	SeccompRule   string
+	Env           []string
 }
 
 type LanguageCompileConfig struct {
@@ -49,9 +49,9 @@ var CompileC = LanguageCompileConfig{
 		MaxCpuTime:     3000,
 		MaxRealTime:    5000,
 		MaxMemory:      supervisor.UNLIMITED,
-		CompileCommand: "/usr/bin/gcc -DONLINE_JUDGE -O2 -w -fmax-errors=3 -std=c99 main.c -lm -o main",
+		CompileCommand: "/usr/bin/gcc -O2 -w -fmax-errors=3 -std=c99 main.c -lm -o main",
 	},
-	RunConfig:     RunConfig{
+	RunConfig: RunConfig{
 		Command:       "{exe_path}",
 		StdinputPath:  "1.in",
 		StdoutputPath: "1.out",
@@ -67,9 +67,9 @@ var CompileCpp = LanguageCompileConfig{
 		MaxCpuTime:     3000,
 		MaxRealTime:    5000,
 		MaxMemory:      supervisor.UNLIMITED,
-		CompileCommand: "/usr/bin/g++ -DONLINE_JUDGE -O2 -w -fmax-errors=3 -std=c++11 main.cpp -lm -o main",
+		CompileCommand: "/usr/bin/g++ -O2 -w -fmax-errors=3 -std=c++11 main.cpp -lm -o main",
 	},
-	RunConfig:     RunConfig{
+	RunConfig: RunConfig{
 		Command:       "{exe_path}",
 		StdinputPath:  "1.in",
 		StdoutputPath: "1.out",
@@ -85,31 +85,49 @@ var CompileJava = LanguageCompileConfig{
 		MaxCpuTime:     3000,
 		MaxRealTime:    5000,
 		MaxMemory:      supervisor.UNLIMITED,
-		CompileCommand: "/usr/bin/javac Main.java -d Main -encoding UTF8",
+		CompileCommand: "/usr/bin/javac {src_path} -d {exe_dir} -encoding UTF8",
 	},
-	RunConfig:     RunConfig{
-		Command:     "/usr/bin/java -cp {exe_dir} -Xss1M -XX:MaxPermSize=16M -XX:PermSize=8M -Xms16M -Xmx{max_memory}k -Djava.security.manager -Dfile.encoding=UTF-8 -Djava.security.policy==/etc/java_policy -Djava.awt.headless=true Main",
+	RunConfig: RunConfig{
+		Command:       "/usr/bin/java -cp {exe_dir} -XX:MaxRAM={max_memory}k -Djava.security.manager -Dfile.encoding=UTF-8 -Djava.security.policy==/etc/java_policy -Djava.awt.headless=true Main",
 		StdinputPath:  "1.in",
 		StdoutputPath: "1.out",
 		SeccompRule:   "none",
-		Env:            append(DefaultEnv, "MALLOC_ARENA_MAX=1"),
+		Env:           DefaultEnv,
 	},
 }
 
 var CompilePython2 = LanguageCompileConfig{
 	CompileConfig: CompileConfig{
 		SrcName:        "solution.py",
-		ExeName:        "solution",
+		ExeName:        "solution.pyc",
 		MaxCpuTime:     3000,
 		MaxRealTime:    5000,
 		MaxMemory:      supervisor.UNLIMITED,
-		CompileCommand: "/usr/bin/python -m py_compile solution.py",
+		CompileCommand: "/usr/bin/python -m py_compile {src_path}",
 	},
-	RunConfig:     RunConfig{
+	RunConfig: RunConfig{
 		Command:       "/usr/bin/python {exe_path}",
 		StdinputPath:  "1.in",
 		StdoutputPath: "1.out",
 		SeccompRule:   "general",
 		Env:           DefaultEnv,
+	},
+}
+
+var CompilePython3 = LanguageCompileConfig{
+	CompileConfig: CompileConfig{
+		SrcName:        "solution.py",
+		ExeName:        "__pycache__/solution.cpython-35.pyc",
+		MaxCpuTime:     3000,
+		MaxRealTime:    5000,
+		MaxMemory:      128 * 1024 * 1024,
+		CompileCommand: "/usr/bin/python3 -m py_compile {src_path}",
+	},
+	RunConfig:     RunConfig{
+		Command:       "/usr/bin/python3 {exe_path}",
+		StdinputPath:  "1.in",
+		StdoutputPath: "1.out",
+		SeccompRule: "general",
+		Env:         append(DefaultEnv, "PYTHONIOENCODING=UTF-8"),
 	},
 }
