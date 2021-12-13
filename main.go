@@ -6,6 +6,7 @@ import (
 )
 
 func main() {
+	// update
 	r := gin.Default()
 	r.GET("/ping", server.Ping)
 	r.GET("/runcode", server.HandleCode)
