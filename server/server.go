@@ -69,12 +69,40 @@ func handleConn(ws *websocket.Conn) {
 		switch req.Language {
 		case "c":
 			conf = config.CompileC
+		case "c11":
+			conf = config.CompileC11
 		case "cpp":
 			conf = config.CompileCpp
+		case "cpp14":
+			conf = config.CompileCpp14
+		case "cpp17":
+			conf = config.CompileCpp17
 		case "java":
 			conf = config.CompileJava
 		case "py2":
 			conf = config.CompilePython2
+		case "py3":
+			conf = config.CompilePython3
+		case "php":
+			conf = config.CompilePhp7
+		case "javascript":
+			conf = config.CompileJsc
+		case "golang":
+			conf = config.CompileGo
+		case "csharp":
+			conf = config.CompileCsharp
+		case "ruby":
+			conf = config.CompileRuby
+		case "rust":
+			conf = config.CompileRust
+		case "haskell":
+			conf = config.CompileHaskell
+		case "pascal":
+			conf = config.CompilePascal
+		case "plaintext":
+			conf = config.CompilePlainText
+		case "basic":
+			conf = config.CompileBasic
 		default:
 			sendToClient(ws, gin.H{
 				"code": -1,
