@@ -12,8 +12,7 @@ import (
 	"strings"
 )
 
-
-func Compile(c config.CompileConfig,  space string) (string, error)  {
+func Compile(c config.CompileConfig, space string) (string, error) {
 
 	exePath := filepath.Join(space, c.ExeName)
 	srcCodePath := filepath.Join(space, c.SrcName)
@@ -45,7 +44,7 @@ func Compile(c config.CompileConfig,  space string) (string, error)  {
 		ErrorPath:         compilerOut,
 		LogPath:           config.COMPILER_LOG_PATH,
 		Args:              args[1:],
-		Env:               []string{"PATH=" + os.Getenv("PATH")},
+		Env:               []string{"PATH=" + os.Getenv("PATH"), "GOPATH=/root/go", "HOME=/root"},
 		SecCompRuleName:   "none",
 		Uid:               config.COMPILER_USER_UID,
 		Gid:               config.COMPILER_GROUP_UID,

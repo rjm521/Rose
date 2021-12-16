@@ -236,7 +236,7 @@ var CompileGo = LanguageCompileConfig{
 		StdinputPath:  "1.in",
 		StdoutputPath: "1.out",
 		SeccompRule:   "none",
-		Env:           append(DefaultEnv, "GODEBUG=madvdontneed=1", "GOCACHE=off", "GOPATH=/root/go"),
+		Env:           append(DefaultEnv, "GODEBUG=madvdontneed=1", "GOCACHE=off"),
 	},
 }
 
