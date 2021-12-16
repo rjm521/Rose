@@ -178,7 +178,7 @@ var CompilePython3 = LanguageCompileConfig{
 		CompileCommand: "/usr/bin/python3.7 -m py_compile {src_path}",
 	},
 	RunConfig: RunConfig{
-		Command:       "/usr/bin/python3 {exe_path}",
+		Command:       "/usr/bin/python3.7 {exe_path}",
 		StdinputPath:  "1.in",
 		StdoutputPath: "1.out",
 		SeccompRule:   "general",
@@ -247,7 +247,7 @@ var CompileCsharp = LanguageCompileConfig{
 		MaxCpuTime:     3000,
 		MaxRealTime:    10000,
 		MaxMemory:      1024 * 1024 * 1024,
-		CompileCommand: "/usr/bin/mcs -optimize+ build -out:{main} main.cs",
+		CompileCommand: "/usr/bin/mcs -optimize+ build -out:{exe_path} {src_path}",
 	},
 	RunConfig{
 		Command:       "/usr/bin/mono {exe_path}",
