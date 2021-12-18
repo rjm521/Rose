@@ -58,8 +58,8 @@ ENV GOPATH /home/coderunner/go
 ENV PATH /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/local/go/bin
 
 # install project
-RUN cd /home/coderunner/go && git clone https://github.com/rjm521/RunCodeServer.git
-WORKDIR /home/coderunner/go/RunCodeServer
+RUN cd /home/coderunner/go && git clone https://github.com/rjm521/Rose.git
+WORKDIR /home/coderunner/go/Rose
 RUN go env -w GO111MODULE=on  && \
     go env -w GOPROXY=https://goproxy.cn,direct
 RUN go get -d -v ./...
