@@ -1,6 +1,8 @@
 # Rose
 
-![Rose](/logo.png)
+<img 
+    src="logo.png" 
+    width="240" height="78" border="0" alt="Rose">
 
 
 Rose is a service thtat provides a fast and simple way to support browser-based online code debugging.
