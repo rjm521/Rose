@@ -49,7 +49,7 @@ var CompileC = LanguageCompileConfig{
 		MaxCpuTime:     3000,
 		MaxRealTime:    10000,
 		MaxMemory:      1024 * 1024 * 1024,
-		CompileCommand: "/usr/bin/gcc -O2 -w -fmax-errors=3 -std=c99 main.c -lm -o main",
+		CompileCommand: "/usr/bin/gcc -O2 -w -fmax-errors=3 -std=c99 {src_path} -lm -o {exe_path}",
 	},
 	RunConfig: RunConfig{
 		Command:       "{exe_path}",
@@ -67,7 +67,7 @@ var CompileC11 = LanguageCompileConfig{
 		MaxCpuTime:     3000,
 		MaxRealTime:    10000,
 		MaxMemory:      1024 * 1024 * 1024,
-		CompileCommand: "/usr/bin/gcc -O2 -w -fmax-errors=3 -std=c11 main.c -lm -o main",
+		CompileCommand: "/usr/bin/gcc -O2 -w -fmax-errors=3 -std=c11 {src_path} -lm -o {exe_path}",
 	},
 	RunConfig: RunConfig{
 		Command:       "{exe_path}",
@@ -85,7 +85,7 @@ var CompileCpp = LanguageCompileConfig{
 		MaxCpuTime:     3000,
 		MaxRealTime:    10000,
 		MaxMemory:      1024 * 1024 * 1024,
-		CompileCommand: "/usr/bin/g++ -O2 -w -fmax-errors=3 -std=c++11 main.cpp -lm -o main",
+		CompileCommand: "/usr/bin/g++ -O2 -w -fmax-errors=3 -std=c++11 {src_path} -lm -o {exe_path}",
 	},
 	RunConfig: RunConfig{
 		Command:       "{exe_path}",
@@ -103,7 +103,7 @@ var CompileCpp14 = LanguageCompileConfig{
 		MaxCpuTime:     3000,
 		MaxRealTime:    10000,
 		MaxMemory:      1024 * 1024 * 1024,
-		CompileCommand: "/usr/bin/g++ -O2 -w -fmax-errors=3 -std=c++14 main.cpp -lm -o main",
+		CompileCommand: "/usr/bin/g++ -O2 -w -fmax-errors=3 -std=c++14 {src_path} -lm -o {exe_path}",
 	},
 	RunConfig: RunConfig{
 		Command:       "{exe_path}",
@@ -121,7 +121,7 @@ var CompileCpp17 = LanguageCompileConfig{
 		MaxCpuTime:     3000,
 		MaxRealTime:    10000,
 		MaxMemory:      1024 * 1024 * 1024,
-		CompileCommand: "/usr/bin/g++ -O2 -w -fmax-errors=3 -std=c++17 main.cpp -lm -o main",
+		CompileCommand: "/usr/bin/g++ -O2 -w -fmax-errors=3 -std=c++17 {src_path} -lm -o {exe_path}",
 	},
 	RunConfig: RunConfig{
 		Command:       "{exe_path}",
@@ -229,7 +229,7 @@ var CompileGo = LanguageCompileConfig{
 		MaxCpuTime:     3000,
 		MaxRealTime:    10000,
 		MaxMemory:      supervisor.UNLIMITED,
-		CompileCommand: "/usr/local/go/bin/go build -o main main.go",
+		CompileCommand: "/usr/local/go/bin/go build -o {exe_path} {src_path}",
 	},
 	RunConfig{
 		Command:       "{exe_path}",
@@ -247,7 +247,7 @@ var CompileCsharp = LanguageCompileConfig{
 		MaxCpuTime:     3000,
 		MaxRealTime:    10000,
 		MaxMemory:      1024 * 1024 * 1024,
-		CompileCommand: "/usr/bin/mcs -optimize+ build -out:{exe_path} {src_path}",
+		CompileCommand: "/usr/bin/mcs -optimize+ -out:{exe_path} {src_path}",
 	},
 	RunConfig{
 		Command:       "/usr/bin/mono {exe_path}",
@@ -283,7 +283,7 @@ var CompileRust = LanguageCompileConfig{
 		MaxCpuTime:     3000,
 		MaxRealTime:    10000,
 		MaxMemory:      1024 * 1024 * 1024,
-		CompileCommand: "/usr/bin/rustc -O -o main main.rs",
+		CompileCommand: "/usr/bin/rustc -O -o {exe_path} {src_path}",
 	},
 	RunConfig{
 		Command:       "{exe_path}",
@@ -301,7 +301,7 @@ var CompileHaskell = LanguageCompileConfig{
 		MaxCpuTime:     3000,
 		MaxRealTime:    10000,
 		MaxMemory:      1024 * 1024 * 1024,
-		CompileCommand: "/usr/bin/ghc -O -outputdir /tmp -o main main.hs",
+		CompileCommand: "/usr/bin/ghc -O -outputdir /tmp -o {exe_path} {src_path}",
 	},
 	RunConfig{
 		Command:       "{exe_path}",
@@ -319,7 +319,7 @@ var CompilePascal = LanguageCompileConfig{
 		MaxCpuTime:     3000,
 		MaxRealTime:    10000,
 		MaxMemory:      1024 * 1024 * 1024,
-		CompileCommand: "/usr/bin/ghc -O -outputdir /tmp -o main main.hs",
+		CompileCommand: "/usr/bin/fpc -O2 -o{exe_path} {src_path}",
 	},
 	RunConfig{
 		Command:       "{exe_path}",
@@ -355,7 +355,7 @@ var CompileBasic = LanguageCompileConfig{
 		MaxCpuTime:     3000,
 		MaxRealTime:    10000,
 		MaxMemory:      1024 * 1024 * 1024,
-		CompileCommand: "/usr/local/bin/fbc main.bas",
+		CompileCommand: "/usr/local/bin/fbc {src_path}",
 	},
 	RunConfig{
 		Command:       "{exe_path}",
